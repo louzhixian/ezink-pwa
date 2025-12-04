@@ -8,13 +8,14 @@ let pageHeight = 0;
 let contentElement = null;
 let pageOverlap = 40; // px of overlap, dynamic per computed line height
 let pageStride = 0;
-let footerHideTimer = null;
-const FOOTER_VISIBLE_MS = 5000;
+let chromeHideTimer = null;
+const CHROME_VISIBLE_MS = 3000;
+const MIN_HEADER_SPACE = 16;
 const MIN_FOOTER_SPACE = 12;
 
 // Default settings - auto-detect Chinese language
 const defaultSettings = {
-  fontSize: '18',
+  fontSize: '24',
   fontFamily: navigator.language.startsWith('zh')
     ? "'LXGW WenKai', serif"  // Chinese default
     : 'Georgia, serif',        // Western default
@@ -96,7 +97,7 @@ async function initReader() {
       setupSettingsPanel();
       setupDarkMode();
       setupBackButton();
-      setupFooterVisibility();
+      setupChromeVisibility();
       updateClickZones();
     }, 100);
 
@@ -299,49 +300,59 @@ function setupBackButton() {
   }
 }
 
-// Manage footer auto-hide and reveal
-function setupFooterVisibility() {
+// Manage header/footer auto-hide and reveal
+function setupChromeVisibility() {
+  const header = document.getElementById('reader-header');
   const footer = document.getElementById('reader-footer');
-  const revealZone = document.getElementById('footer-reveal-zone');
-  if (!footer || !revealZone) return;
+  const revealZone = document.getElementById('chrome-reveal-zone');
+  if (!header || !footer || !revealZone) return;
 
-  const applyFooterSpace = (visible) => {
-    const footerH = footer ? footer.offsetHeight : 0;
-    const header = document.getElementById('reader-header');
+  const applyChromeSpace = () => {
     const headerH = header ? header.offsetHeight : 0;
+    const footerH = footer ? footer.offsetHeight : 0;
+    const headerVisible = header && !header.classList.contains('hidden');
+    const footerVisible = footer && !footer.classList.contains('hidden');
     const root = document.documentElement;
-    root.style.setProperty('--footer-space', `${visible ? footerH : MIN_FOOTER_SPACE}px`);
-    root.style.setProperty('--click-zone-bottom', visible ? `${footerH}px` : '0px');
+
+    const headerSpace = headerVisible ? headerH : MIN_HEADER_SPACE;
+    const footerSpace = footerVisible ? footerH : MIN_FOOTER_SPACE;
+
+    root.style.setProperty('--header-space', `${headerSpace}px`);
+    root.style.setProperty('--footer-space', `${footerSpace}px`);
+    root.style.setProperty('--click-zone-top', headerVisible ? `${headerH}px` : '0px');
+    root.style.setProperty('--click-zone-bottom', footerVisible ? `${footerH}px` : '0px');
     root.style.setProperty('--footer-height', `${footerH}px`);
-    root.style.setProperty('--click-zone-top', `${headerH}px`);
+
     if (contentElement) {
       calculatePagination();
       goToPage(Math.min(currentPage, totalPages));
     }
   };
 
-  const hideFooter = () => {
+  const hideChrome = () => {
+    header.classList.add('hidden');
     footer.classList.add('hidden');
     revealZone.style.pointerEvents = 'auto';
-    applyFooterSpace(false);
+    applyChromeSpace();
   };
 
-  const showFooter = () => {
+  const showChrome = () => {
+    header.classList.remove('hidden');
     footer.classList.remove('hidden');
     revealZone.style.pointerEvents = 'none';
-    applyFooterSpace(true);
-    if (footerHideTimer) clearTimeout(footerHideTimer);
-    footerHideTimer = setTimeout(hideFooter, FOOTER_VISIBLE_MS);
+    applyChromeSpace();
+    if (chromeHideTimer) clearTimeout(chromeHideTimer);
+    chromeHideTimer = setTimeout(hideChrome, CHROME_VISIBLE_MS);
   };
 
   revealZone.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    showFooter();
+    showChrome();
   });
 
   // Initial visibility then auto-hide
-  showFooter();
+  showChrome();
 }
 
 // Update click zones to avoid header/footer and align reveal zone height
@@ -352,12 +363,16 @@ function updateClickZones() {
 
   const headerH = header ? header.offsetHeight : 0;
   const footerH = footer ? footer.offsetHeight : 0;
+  const headerVisible = header && !header.classList.contains('hidden');
   const footerVisible = footer && !footer.classList.contains('hidden');
+
+  const headerSpace = headerVisible ? headerH : MIN_HEADER_SPACE;
   const footerSpace = footerVisible ? footerH : MIN_FOOTER_SPACE;
 
-  root.style.setProperty('--click-zone-top', `${headerH}px`);
+  root.style.setProperty('--click-zone-top', headerVisible ? `${headerH}px` : '0px');
   root.style.setProperty('--click-zone-bottom', footerVisible ? `${footerH}px` : '0px');
   root.style.setProperty('--footer-height', `${footerH}px`);
+  root.style.setProperty('--header-space', `${headerSpace}px`);
   root.style.setProperty('--footer-space', `${footerSpace}px`);
 }
 
