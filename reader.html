@@ -8,33 +8,30 @@
   <link rel="stylesheet" href="css/reader.css">
 </head>
 <body>
-  <div id="reader-container">
-    <header id="reader-header">
-      <h1 id="article-title">Loading...</h1>
-      <div id="article-meta">
-        <span id="article-byline"></span>
-        <span id="article-site"></span>
-      </div>
-    </header>
+      <div id="reader-container">
+        <header id="reader-header">
+          <h1 id="article-title">Loading...</h1>
+          <div id="article-meta">
+            <span id="article-byline"></span>
+            <span id="article-site"></span>
+          </div>
+        </header>
 
-    <main id="reader-content">
-      <!-- Article content will be dynamically inserted here -->
-    </main>
+        <main id="reader-content">
+          <!-- Article content will be dynamically inserted here -->
+        </main>
 
-    <footer id="reader-footer">
-      <div id="page-info">
-        Page <span id="current-page">1</span> / <span id="total-pages">1</span>
+        <footer id="reader-footer">
+          <div class="left-controls">
+            <button id="back-btn" title="Back to List">← Back</button>
+            <button id="settings-btn" title="Settings">A</button>
+            <button id="dark-mode-btn" title="Toggle Dark Mode">◐</button>
+          </div>
+          <div id="page-info">
+            Page <span id="current-page">1</span> / <span id="total-pages">1</span>
+          </div>
+        </footer>
       </div>
-      <div class="button-group">
-        <button id="settings-btn" title="Settings">A</button>
-        <button id="dark-mode-btn" title="Toggle Dark Mode">◐</button>
-        <button id="back-btn" title="Back to List">←</button>
-      </div>
-      <div id="navigation-hint">
-        ← → or click to navigate
-      </div>
-    </footer>
-  </div>
 
   <!-- Click zones for navigation -->
   <div class="click-zone click-zone-left" id="prev-zone"></div>
@@ -55,8 +52,13 @@
             <option value="16">16px</option>
             <option value="18" selected>18px</option>
             <option value="20">20px</option>
-            <option value="22">22px</option>
             <option value="24">24px</option>
+            <option value="28">28px</option>
+            <option value="32">32px</option>
+            <option value="36">36px</option>
+            <option value="40">40px</option>
+            <option value="44">44px</option>
+            <option value="48">48px</option>
           </select>
         </div>
         <div class="setting-item">

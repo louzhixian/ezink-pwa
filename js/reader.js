@@ -6,6 +6,8 @@ let currentPage = 1;
 let totalPages = 1;
 let pageHeight = 0;
 let contentElement = null;
+let pageOverlap = 40; // px of overlap, dynamic per computed line height
+let pageStride = 0;
 
 // Default settings - auto-detect Chinese language
 const defaultSettings = {
@@ -124,8 +126,14 @@ function calculatePagination() {
   // Get total scrollable height
   const totalHeight = content.scrollHeight;
 
+  // Calculate dynamic overlap based on computed line-height to keep exactly ~1 line repeated
+  pageOverlap = computeLineOverlapPx();
+
+  // Calculate effective stride with overlap
+  pageStride = Math.max(pageHeight - pageOverlap, Math.max(pageOverlap + 10, 50));
+
   // Calculate number of pages
-  totalPages = Math.ceil(totalHeight / pageHeight);
+  totalPages = Math.ceil(Math.max(totalHeight - pageOverlap, 1) / pageStride);
 
   // Ensure at least 1 page
   if (totalPages < 1) totalPages = 1;
@@ -135,6 +143,33 @@ function calculatePagination() {
   document.getElementById('current-page').textContent = currentPage;
 
   console.log(`Pagination calculated: ${totalPages} pages, ${pageHeight}px per page, ${totalHeight}px total`);
+}
+
+// Compute overlap (px) equal to ~1 line height of content
+function computeLineOverlapPx() {
+  const target = contentElement || document.getElementById('reader-content') || document.body;
+  const styles = window.getComputedStyle(target);
+
+  let lineHeight = parseFloat(styles.lineHeight);
+
+  if (Number.isNaN(lineHeight)) {
+    const fontSize = parseFloat(styles.fontSize) || 18;
+    const lineHeightRaw = styles.lineHeight;
+
+    if (lineHeightRaw && lineHeightRaw.endsWith('px')) {
+      lineHeight = parseFloat(lineHeightRaw);
+    } else {
+      const ratio = parseFloat(lineHeightRaw) || 1.4;
+      lineHeight = fontSize * ratio;
+    }
+  }
+
+  if (!lineHeight || Number.isNaN(lineHeight)) {
+    const fallbackFont = parseFloat(styles.fontSize) || 18;
+    lineHeight = fallbackFont * 1.4;
+  }
+
+  return Math.max(Math.round(lineHeight), 8);
 }
 
 // Navigate to specific page
@@ -147,7 +182,9 @@ function goToPage(pageNumber) {
   currentPage = pageNumber;
 
   // Calculate scroll position for this page
-  const scrollPosition = (currentPage - 1) * pageHeight;
+  const baseHeight = pageHeight || contentElement?.clientHeight || 0;
+  const stride = pageStride || Math.max(baseHeight - pageOverlap, Math.max(pageOverlap + 10, 50));
+  const scrollPosition = (currentPage - 1) * stride;
 
   // Instantly scroll to position (no smooth behavior for E-ink)
   contentElement.scrollTo({
