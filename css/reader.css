@@ -34,8 +34,8 @@ body {
   max-width: 800px;
   margin: 0 auto;
   padding: 40px 60px;
-  padding-top: 110px;   /* Reserve space so content never sits under fixed header */
-  padding-bottom: 110px; /* Reserve space so content never sits under fixed footer */
+  padding-top: var(--header-space, 110px);   /* Reserve space so content never sits under fixed header */
+  padding-bottom: var(--footer-space, 110px); /* Reserve space so content never sits under fixed footer */
 }
 
 /* Header Styles */
@@ -69,6 +69,8 @@ body {
   /* Single line with ellipsis in middle (handled by JS) */
   white-space: nowrap;
   overflow: hidden;
+  max-width: 100%;
+  display: block;
 }
 
 #article-meta {
@@ -461,8 +463,8 @@ body.dark-mode #error {
 /* Click Zones for Navigation */
 .click-zone {
   position: fixed;
-  top: 0;
-  bottom: 0;
+  top: var(--click-zone-top, 0px);
+  bottom: var(--click-zone-bottom, 0px);
   width: 30%;
   cursor: pointer;
   z-index: 50;
@@ -478,6 +480,22 @@ body.dark-mode #error {
 
 .click-zone-right {
   right: 0;
+}
+
+.footer-reveal-zone {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--footer-height, 120px);
+  z-index: 120;
+  background: transparent;
+  pointer-events: auto;
+}
+
+#reader-footer.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Settings Modal */
@@ -600,7 +618,7 @@ body.dark-mode #error {
 /* Mobile responsiveness */
 @media screen and (max-width: 768px) {
   #reader-container {
-    padding: 100px 20px 70px;
+    padding: var(--header-space, 100px) 20px var(--footer-space, 70px);
   }
 
   body {

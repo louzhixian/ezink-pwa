@@ -8,6 +8,9 @@ let pageHeight = 0;
 let contentElement = null;
 let pageOverlap = 40; // px of overlap, dynamic per computed line height
 let pageStride = 0;
+let footerHideTimer = null;
+const FOOTER_VISIBLE_MS = 5000;
+const MIN_FOOTER_SPACE = 12;
 
 // Default settings - auto-detect Chinese language
 const defaultSettings = {
@@ -66,8 +69,8 @@ async function initReader() {
     const titleElement = document.getElementById('article-title');
     titleElement.textContent = article.title || 'Untitled';
 
-    // Apply title truncation with ellipsis in middle
-    truncateTitle(titleElement);
+    // Fit title font-size to single-line width
+    fitTitleToWidth(titleElement);
 
     document.getElementById('article-byline').textContent = article.byline || '';
     document.getElementById('article-site').textContent = article.site_name || '';
@@ -87,11 +90,14 @@ async function initReader() {
 
     // Calculate pagination after content is rendered
     setTimeout(() => {
+      refitTitle();
       calculatePagination();
       setupNavigation();
       setupSettingsPanel();
       setupDarkMode();
       setupBackButton();
+      setupFooterVisibility();
+      updateClickZones();
     }, 100);
 
   } catch (error) {
@@ -262,7 +268,12 @@ function setupNavigation() {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
       const oldPage = currentPage;
+      const titleEl = document.getElementById('article-title');
+      if (titleEl) {
+        fitTitleToWidth(titleEl);
+      }
       calculatePagination();
+      updateClickZones();
 
       // Adjust current page if it's now out of bounds
       if (currentPage > totalPages) {
@@ -288,6 +299,68 @@ function setupBackButton() {
   }
 }
 
+// Manage footer auto-hide and reveal
+function setupFooterVisibility() {
+  const footer = document.getElementById('reader-footer');
+  const revealZone = document.getElementById('footer-reveal-zone');
+  if (!footer || !revealZone) return;
+
+  const applyFooterSpace = (visible) => {
+    const footerH = footer ? footer.offsetHeight : 0;
+    const header = document.getElementById('reader-header');
+    const headerH = header ? header.offsetHeight : 0;
+    const root = document.documentElement;
+    root.style.setProperty('--footer-space', `${visible ? footerH : MIN_FOOTER_SPACE}px`);
+    root.style.setProperty('--click-zone-bottom', visible ? `${footerH}px` : '0px');
+    root.style.setProperty('--footer-height', `${footerH}px`);
+    root.style.setProperty('--click-zone-top', `${headerH}px`);
+    if (contentElement) {
+      calculatePagination();
+      goToPage(Math.min(currentPage, totalPages));
+    }
+  };
+
+  const hideFooter = () => {
+    footer.classList.add('hidden');
+    revealZone.style.pointerEvents = 'auto';
+    applyFooterSpace(false);
+  };
+
+  const showFooter = () => {
+    footer.classList.remove('hidden');
+    revealZone.style.pointerEvents = 'none';
+    applyFooterSpace(true);
+    if (footerHideTimer) clearTimeout(footerHideTimer);
+    footerHideTimer = setTimeout(hideFooter, FOOTER_VISIBLE_MS);
+  };
+
+  revealZone.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showFooter();
+  });
+
+  // Initial visibility then auto-hide
+  showFooter();
+}
+
+// Update click zones to avoid header/footer and align reveal zone height
+function updateClickZones() {
+  const header = document.getElementById('reader-header');
+  const footer = document.getElementById('reader-footer');
+  const root = document.documentElement;
+
+  const headerH = header ? header.offsetHeight : 0;
+  const footerH = footer ? footer.offsetHeight : 0;
+  const footerVisible = footer && !footer.classList.contains('hidden');
+  const footerSpace = footerVisible ? footerH : MIN_FOOTER_SPACE;
+
+  root.style.setProperty('--click-zone-top', `${headerH}px`);
+  root.style.setProperty('--click-zone-bottom', footerVisible ? `${footerH}px` : '0px');
+  root.style.setProperty('--footer-height', `${footerH}px`);
+  root.style.setProperty('--footer-space', `${footerSpace}px`);
+}
+
 // Utility function to show error
 function showError(message) {
   document.getElementById('loading').style.display = 'none';
@@ -296,52 +369,41 @@ function showError(message) {
   document.getElementById('error').style.display = 'block';
 }
 
-// Truncate title with ellipsis in the middle
-function truncateTitle(element) {
-  const fullText = element.textContent;
-  const maxWidth = element.offsetWidth;
+// Fit title to a single line by shrinking font size if needed
+function fitTitleToWidth(element) {
+  const maxSize = 32;
+  const minSize = 16;
 
-  // Create a temporary span to measure text width
-  const measureSpan = document.createElement('span');
-  measureSpan.style.visibility = 'hidden';
-  measureSpan.style.position = 'absolute';
-  measureSpan.style.whiteSpace = 'nowrap';
-  measureSpan.style.fontSize = window.getComputedStyle(element).fontSize;
-  measureSpan.style.fontWeight = window.getComputedStyle(element).fontWeight;
-  measureSpan.style.fontFamily = window.getComputedStyle(element).fontFamily;
-  document.body.appendChild(measureSpan);
+  element.style.fontSize = `${maxSize}px`;
+  const parent = element.parentElement;
+  let maxWidth = element.clientWidth;
 
-  measureSpan.textContent = fullText;
-
-  // Check if truncation is needed
-  if (measureSpan.offsetWidth <= maxWidth) {
-    document.body.removeChild(measureSpan);
-    return;
+  if (parent) {
+    const ps = window.getComputedStyle(parent);
+    const padL = parseFloat(ps.paddingLeft) || 0;
+    const padR = parseFloat(ps.paddingRight) || 0;
+    maxWidth = Math.max((parent.clientWidth || 0) - padL - padR, element.clientWidth);
   }
 
-  // Binary search for the right amount to keep on each side
-  const ellipsis = '...';
-  let left = 0;
-  let right = Math.floor(fullText.length / 2);
-  let bestFit = '';
+  if (!maxWidth || maxWidth <= 0) return;
 
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
-    const truncated = fullText.substring(0, mid) + ellipsis + fullText.substring(fullText.length - mid);
-    measureSpan.textContent = truncated;
-
-    if (measureSpan.offsetWidth <= maxWidth) {
-      bestFit = truncated;
-      left = mid + 1;
-    } else {
-      right = mid - 1;
-    }
+  let currentSize = maxSize;
+  while (currentSize > minSize && element.scrollWidth > maxWidth) {
+    currentSize -= 1;
+    element.style.fontSize = `${currentSize}px`;
   }
+}
 
-  element.textContent = bestFit || (fullText.substring(0, 10) + ellipsis + fullText.substring(fullText.length - 10));
-  element.title = fullText; // Show full text on hover
+// Safely re-run title fitting after layout settles
+function refitTitle() {
+  const el = document.getElementById('article-title');
+  if (!el) return;
 
-  document.body.removeChild(measureSpan);
+  // Immediate fit
+  fitTitleToWidth(el);
+
+  // Fit again on next frame to catch late layout changes (fonts/padding)
+  requestAnimationFrame(() => fitTitleToWidth(el));
 }
 
 // Load settings from localStorage
