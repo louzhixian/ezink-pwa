@@ -598,7 +598,7 @@ body.dark-mode #error {
 /* Mobile responsiveness */
 @media screen and (max-width: 768px) {
   #reader-container {
-    padding: 100px 20px 100px;
+    padding: 100px 20px 70px;
   }
 
   body {
