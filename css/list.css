@@ -60,6 +60,20 @@ main {
   transform: scale(0.99);
 }
 
+.article-item.offline-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f5f5f5;
+}
+
+.article-item.offline-disabled:hover {
+  background-color: #f5f5f5;
+}
+
+.article-item.offline-disabled:active {
+  transform: none;
+}
+
 .article-item h3 {
   font-size: 22px;
   font-weight: bold;
@@ -228,4 +242,85 @@ main {
 .btn-danger:hover {
   background: #d00;
   color: #fff;
+}
+
+/* Icon buttons */
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid currentColor;
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: none;
+  flex-shrink: 0;
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.icon-btn:hover {
+  background: currentColor;
+}
+
+.icon-btn:hover svg {
+  fill: #fff;
+}
+
+.icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-btn:disabled:hover {
+  background: #fff;
+}
+
+.icon-btn:disabled:hover svg {
+  fill: currentColor;
+}
+
+/* Download button states */
+.download-btn {
+  color: #000;
+}
+
+.download-btn.downloading {
+  color: #666;
+}
+
+.download-btn.downloaded {
+  color: #00aa00;
+}
+
+/* Delete button (icon) */
+.delete-btn-icon {
+  color: #d00;
+}
+
+/* Spinner animation for downloading state */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Update article-actions to use flexbox with gap */
+.article-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }

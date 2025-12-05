@@ -50,15 +50,42 @@ async function initReader() {
     document.getElementById('loading').style.display = 'block';
     document.getElementById('reader-container').style.display = 'none';
 
-    // Load article from Supabase
-    const { data: article, error } = await supabase
-      .from('articles')
-      .select('*')
-      .eq('id', articleId)
-      .single();
+    // Try to load article from Supabase first (network first strategy)
+    let article = null;
+    let loadedFromCache = false;
 
-    if (error) {
-      throw error;
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('id', articleId)
+        .single();
+
+      if (error) throw error;
+
+      article = data;
+
+      // If article was previously downloaded and we got fresh data, update cache
+      if (article) {
+        const isDownloaded = await checkArticleDownloaded(articleId);
+        if (isDownloaded) {
+          await saveArticleOffline(article);
+          console.log('Updated cached article with fresh data');
+        }
+      }
+    } catch (error) {
+      // Network failed, try to load from IndexedDB
+      console.warn('Network failed, attempting to load from offline cache:', error);
+      article = await getArticleOffline(articleId);
+
+      if (article) {
+        loadedFromCache = true;
+        console.log('Loaded article from offline cache');
+        showOfflineBadge(); // Show offline indicator
+      } else {
+        showError('Article not found and not available offline. Please check your connection.');
+        return;
+      }
     }
 
     if (!article) {
@@ -81,6 +108,9 @@ async function initReader() {
 
     contentElement = document.getElementById('reader-content');
     contentElement.innerHTML = article.content;
+
+    // Setup graceful degradation for images (handle loading failures)
+    setupImageErrorHandling();
 
     // Hide loading
     document.getElementById('loading').style.display = 'none';
@@ -110,6 +140,29 @@ async function initReader() {
     console.error('Error loading article:', error);
     showError('Failed to load article: ' + error.message);
   }
+}
+
+// Setup error handling for images (graceful degradation for offline mode)
+function setupImageErrorHandling() {
+  const images = document.querySelectorAll('#reader-content img');
+
+  images.forEach(img => {
+    // Add error handler to mark broken images
+    img.addEventListener('error', function() {
+      console.log('Image failed to load:', this.src);
+      this.classList.add('broken-image');
+    });
+
+    // If image is already in error state (e.g., offline), mark it immediately
+    if (!img.complete || img.naturalHeight === 0) {
+      // Check after a short delay to see if image loaded
+      setTimeout(() => {
+        if (!img.complete || img.naturalHeight === 0) {
+          img.classList.add('broken-image');
+        }
+      }, 1000);
+    }
+  });
 }
 
 // Wait for all images to load

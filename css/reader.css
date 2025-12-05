@@ -148,6 +148,45 @@ body {
   border: 1px solid #000;
 }
 
+/* Graceful degradation for broken images in offline mode */
+#reader-content img.broken-image {
+  display: block;
+  min-height: 80px;
+  background: #f9f9f9;
+  border: 2px dashed #999;
+  padding: 20px;
+  text-align: center;
+  font-style: italic;
+  color: #666;
+  position: relative;
+}
+
+/* Default message for images without alt text */
+#reader-content img.broken-image::before {
+  content: "Image not available offline";
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #888;
+}
+
+/* Show alt text for images with alt attribute */
+#reader-content img[alt].broken-image::before {
+  content: attr(alt);
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #666;
+}
+
+#reader-content img[alt].broken-image::after {
+  content: "(Image not available offline)";
+  display: block;
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+}
+
 #reader-content a {
   color: #000;
   text-decoration: underline;

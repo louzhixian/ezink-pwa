@@ -78,10 +78,25 @@ function renderArticles(articles) {
 
   emptyStateEl.style.display = 'none';
 
-  articles.forEach((article) => {
+  articles.forEach(async (article) => {
     const item = document.createElement('div');
     item.className = 'article-item';
-    item.addEventListener('click', () => openArticle(article.id));
+
+    // Check if article is cached for offline access
+    const isOffline = !navigator.onLine;
+    const isCached = await checkArticleDownloaded(article.id);
+
+    // If offline and not cached, disable the article item
+    if (isOffline && !isCached) {
+      item.classList.add('offline-disabled');
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        alert('This article is not available offline. Please download it first or connect to the internet.');
+      });
+    } else {
+      item.addEventListener('click', () => openArticle(article.id));
+    }
 
     const titleEl = document.createElement('h3');
     titleEl.textContent = article.title || 'Untitled';
@@ -124,15 +139,45 @@ function renderArticles(articles) {
     const actions = document.createElement('div');
     actions.className = 'article-actions';
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'delete-btn';
-    deleteBtn.type = 'button';
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openDeleteConfirm(article.id, article.title);
+    // Download button (icon)
+    const downloadBtn = createIconButton(
+      'download-btn',
+      'Download for offline reading (text only, images require internet)',
+      'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z',
+      async (e) => {
+        e.stopPropagation();
+        const isDownloaded = await checkArticleDownloaded(article.id);
+        if (isDownloaded) {
+          // Already downloaded, clicking removes from cache
+          if (confirm('Remove this article from offline cache?')) {
+            await removeArticleFromCache(article.id, downloadBtn);
+          }
+        } else {
+          // Not downloaded, clicking downloads it
+          await downloadArticleToCache(article.id, downloadBtn);
+        }
+      }
+    );
+
+    // Check if article is already downloaded and update button state
+    checkArticleDownloaded(article.id).then(isDownloaded => {
+      if (isDownloaded) {
+        updateDownloadButton(downloadBtn, 'downloaded');
+      }
     });
 
+    // Delete button (icon)
+    const deleteBtn = createIconButton(
+      'delete-btn-icon',
+      'Delete article',
+      'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+      (e) => {
+        e.stopPropagation();
+        openDeleteConfirm(article.id, article.title);
+      }
+    );
+
+    actions.appendChild(downloadBtn);
     actions.appendChild(deleteBtn);
 
     const infoRow = document.createElement('div');
@@ -244,6 +289,113 @@ deleteModal.addEventListener('click', (e) => {
     closeDeleteConfirm();
   }
 });
+
+// Download article to offline cache
+async function downloadArticleToCache(articleId, button) {
+  try {
+    // Show first-time download notice about images not being cached
+    const hasSeenImageNotice = localStorage.getItem('offline_image_notice_shown');
+    if (!hasSeenImageNotice) {
+      const proceed = confirm(
+        'Note: Only article text will be cached for offline reading.\n\n' +
+        'Images require an internet connection to display.\n\n' +
+        'Continue downloading?'
+      );
+
+      if (!proceed) {
+        return; // User cancelled download
+      }
+
+      // Mark notice as shown
+      localStorage.setItem('offline_image_notice_shown', 'true');
+    }
+
+    // Update button to downloading state
+    updateDownloadButton(button, 'downloading');
+
+    // Fetch full article from Supabase
+    const { data: article, error } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('id', articleId)
+      .single();
+
+    if (error) throw error;
+
+    // Save to IndexedDB
+    await saveArticleOffline(article);
+
+    // Update button to downloaded state
+    updateDownloadButton(button, 'downloaded');
+
+    console.log('Article downloaded successfully');
+  } catch (error) {
+    console.error('Download failed:', error);
+    alert('Failed to download article: ' + (error.message || 'Unknown error'));
+    // Restore button to not-downloaded state
+    updateDownloadButton(button, 'not-downloaded');
+  }
+}
+
+// Remove article from offline cache
+async function removeArticleFromCache(articleId, button) {
+  try {
+    await deleteArticleOffline(articleId);
+    updateDownloadButton(button, 'not-downloaded');
+    console.log('Article removed from offline cache:', articleId);
+  } catch (error) {
+    console.error('Failed to remove article from cache:', error);
+    alert('Failed to remove from cache: ' + (error.message || 'Unknown error'));
+  }
+}
+
+// Update download button state
+function updateDownloadButton(button, state) {
+  const svg = button.querySelector('svg');
+
+  if (state === 'not-downloaded') {
+    button.disabled = false;
+    button.className = 'icon-btn download-btn';
+    button.title = 'Download for offline reading (text only, images require internet)';
+    svg.innerHTML = '<path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>';
+    svg.classList.remove('spinner');
+  } else if (state === 'downloading') {
+    button.disabled = true;
+    button.className = 'icon-btn download-btn downloading';
+    button.title = 'Downloading article... (images will not be cached)';
+    svg.innerHTML = '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity="0.25"/><path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="3" fill="none"/>';
+    svg.classList.add('spinner');
+  } else if (state === 'downloaded') {
+    button.disabled = false;
+    button.className = 'icon-btn download-btn downloaded';
+    button.title = 'Downloaded for offline (text only) - Click to remove';
+    svg.classList.remove('spinner');
+    svg.innerHTML = '<path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>';
+  }
+}
+
+// Create icon button with SVG
+function createIconButton(className, title, svgPath, handler) {
+  const button = document.createElement('button');
+  button.className = `icon-btn ${className}`;
+  button.type = 'button';
+  button.title = title;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '20');
+  svg.setAttribute('height', '20');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'currentColor');
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', svgPath);
+  svg.appendChild(path);
+
+  button.appendChild(svg);
+  button.addEventListener('click', handler);
+
+  return button;
+}
 
 // 页面加载时初始化
 (async function init() {
