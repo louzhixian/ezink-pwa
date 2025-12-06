@@ -1,10 +1,10 @@
-// Eink-It PWA Service Worker
+// EZ Ink PWA Service Worker
 // Version: 1.0.0
 
 const CACHE_VERSION = 'v1';
-const STATIC_CACHE = `eink-it-static-${CACHE_VERSION}`;
-const ARTICLE_CACHE = `eink-it-articles-${CACHE_VERSION}`;
-const FONT_CACHE = `eink-it-fonts-${CACHE_VERSION}`;
+const STATIC_CACHE = `ez-ink-static-${CACHE_VERSION}`;
+const ARTICLE_CACHE = `ez-ink-articles-${CACHE_VERSION}`;
+const FONT_CACHE = `ez-ink-fonts-${CACHE_VERSION}`;
 
 // Static assets to precache
 const STATIC_ASSETS = [
@@ -60,7 +60,7 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames
             .filter((name) => {
-              return name.startsWith('eink-it-') &&
+              return name.startsWith('ez-ink-') &&
                      name !== STATIC_CACHE &&
                      name !== ARTICLE_CACHE &&
                      name !== FONT_CACHE;
@@ -232,7 +232,7 @@ self.addEventListener('message', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames
-            .filter((name) => name.startsWith('eink-it-'))
+            .filter((name) => name.startsWith('ez-ink-'))
             .map((name) => caches.delete(name))
         );
       }).then(() => {

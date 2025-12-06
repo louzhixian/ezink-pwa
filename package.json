@@ -1,7 +1,7 @@
 {
-  "name": "eink-it-pwa",
+  "name": "ez-ink-pwa",
   "version": "1.0.0",
-  "description": "E-ink optimized reading PWA for Eink-It browser extension",
+  "description": "E-ink optimized reading PWA for EZ Ink browser extension",
   "main": "index.html",
   "scripts": {
     "dev": "python3 -m http.server 8000",

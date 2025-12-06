@@ -1,6 +1,6 @@
 {
-  "name": "Eink-It Reader",
-  "short_name": "Eink-It",
+  "name": "EZ Ink Reader",
+  "short_name": "EZ Ink",
   "description": "E-ink optimized web reader with cloud sync",
   "start_url": "/",
   "display": "standalone",

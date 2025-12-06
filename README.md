@@ -1,6 +1,6 @@
-# Eink-It PWA - E-ink 优化阅读器
+# EZ Ink PWA - E-ink 优化阅读器
 
-一个专为 E-ink 电子墨水屏设备优化的渐进式 Web 应用（PWA），配合 Eink-It 浏览器扩展使用，提供极致的电子书阅读体验。
+一个专为 E-ink 电子墨水屏设备优化的渐进式 Web 应用（PWA），配合 EZ Ink 浏览器扩展使用，提供极致的电子书阅读体验。
 
 ## 📋 项目概述
 
@@ -19,7 +19,7 @@
 ## 🏗️ 项目结构
 
 ```
-eink-it-pwa/
+ez-ink-pwa/
 ├── index.html              # 登录/注册页面
 ├── list.html               # 文章列表页面
 ├── reader.html             # 阅读器页面
@@ -144,9 +144,9 @@ eink-it-pwa/
 
 ```javascript
 // 三种缓存策略
-const STATIC_CACHE = 'eink-it-static-v1';    // 静态资源
-const ARTICLE_CACHE = 'eink-it-articles-v1'; // API 响应
-const FONT_CACHE = 'eink-it-fonts-v1';       // CDN 字体
+const STATIC_CACHE = 'ezink-static-v1';    // 静态资源
+const ARTICLE_CACHE = 'ezink-articles-v1'; // API 响应
+const FONT_CACHE = 'ezink-fonts-v1';       // CDN 字体
 
 // 策略 1: Cache First（静态资源）
 // HTML, CSS, JS → 优先从缓存读取，失败则网络请求
@@ -162,7 +162,7 @@ const FONT_CACHE = 'eink-it-fonts-v1';       // CDN 字体
 
 ```javascript
 // 数据库结构
-const DB_NAME = 'eink-it-offline';
+const DB_NAME = 'ezink-offline';
 const STORE_NAME = 'articles';
 
 // 存储内容
@@ -265,7 +265,7 @@ WITH CHECK (auth.uid() = user_id);
 
 ```bash
 # 启动本地服务器
-cd eink-it-pwa
+cd ez-ink-pwa
 python3 -m http.server 8000
 
 # 访问
@@ -281,22 +281,22 @@ open http://localhost:8000
 
 2. 部署:
    ```bash
-   cd eink-it-pwa
+   cd ez-ink-pwa
    vercel
    ```
 
-3. 自动生成部署 URL（如 `https://eink-it-pwa.vercel.app`）
+3. 自动生成部署 URL（如 `https://ez-ink-pwa.vercel.app`）
 
 ### Netlify 部署
 
 1. 拖放部署:
    - 访问 https://app.netlify.com/drop
-   - 拖动 `eink-it-pwa` 文件夹到页面
+   - 拖动 `ez-ink-pwa` 文件夹到页面
 
 2. 或使用 CLI:
    ```bash
    npm i -g netlify-cli
-   cd eink-it-pwa
+   cd ez-ink-pwa
    netlify deploy --prod
    ```
 
@@ -304,7 +304,7 @@ open http://localhost:8000
 
 ## 🔗 配套浏览器扩展
 
-此 PWA 需配合 **Eink-It 浏览器扩展** 使用：
+此 PWA 需配合 **EZ Ink 浏览器扩展** 使用：
 
 1. 用户在浏览器中安装扩展
 2. 访问任意网页文章，点击扩展按钮
@@ -329,7 +329,7 @@ open http://localhost:8000
    - 文章自动上传到云端
 
 2. **在 Kindle/E-ink 设备上**:
-   - 打开 PWA 网址（如 `https://eink-it-pwa.vercel.app`）
+   - 打开 PWA 网址（如 `https://ez-ink-pwa.vercel.app`）
    - 登录账户（仅需一次）
    - 浏览文章列表
    - 点击阅读，享受优化的阅读体验
@@ -413,7 +413,7 @@ open http://localhost:8000
 
 ## 🤝 配合扩展使用
 
-**扩展位置**: `/Users/zhixian/Codes/AI Playground/eink-it/eink-it-plugin/`
+**扩展位置**: `/Users/zhixian/Codes/AI Playground/ezink/ez-ink-plugin/`
 
 **扩展功能**:
 - 一键提取网页文章
@@ -495,7 +495,7 @@ WITH CHECK (auth.uid() = user_id);
 
 ## 📧 联系与支持
 
-- **项目**: Eink-It PWA
+- **项目**: EZ Ink PWA
 - **开发时间**: 2024-12
 - **技术栈**: Vanilla JS + Supabase + PWA
 - **目标用户**: E-ink 设备用户

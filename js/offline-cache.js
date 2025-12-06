@@ -1,7 +1,7 @@
-// Eink-It Offline Cache using IndexedDB
+// EZ Ink Offline Cache using IndexedDB
 // Provides client-side caching for articles
 
-const DB_NAME = 'eink-it-offline';
+const DB_NAME = 'ez-ink-offline';
 const DB_VERSION = 1;
 const STORE_NAME = 'articles';
 
