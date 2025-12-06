@@ -82,6 +82,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 document.getElementById('signup-form').addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  const invitationCode = document.getElementById('invitation-code').value.trim().toLowerCase();
   const email = document.getElementById('signup-email').value;
   const password = document.getElementById('signup-password').value;
   const passwordConfirm = document.getElementById('signup-password-confirm').value;
@@ -104,6 +105,19 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
   submitBtn.textContent = 'Signing up...';
 
   try {
+    // 1. 先验证邀请码是否存在且未使用
+    const { data: codeData, error: codeError } = await supabase
+      .from('invitation_codes')
+      .select('code')
+      .eq('code', invitationCode)
+      .is('used_by', null)
+      .single();
+
+    if (codeError || !codeData) {
+      throw new Error('Invalid or already used invitation code');
+    }
+
+    // 2. 注册用户
     const { data, error } = await supabase.auth.signUp({
       email,
       password
@@ -111,6 +125,21 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
 
     if (error) {
       throw error;
+    }
+
+    if (!data.user) {
+      throw new Error('Registration failed');
+    }
+
+    // 3. 标记邀请码为已使用
+    const { error: useError } = await supabase.rpc('use_invitation_code', {
+      p_code: invitationCode,
+      p_user_id: data.user.id
+    });
+
+    if (useError) {
+      console.error('Failed to mark invitation code as used:', useError);
+      // 用户已注册成功，但邀请码标记失败，继续流程
     }
 
     // 注册成功
