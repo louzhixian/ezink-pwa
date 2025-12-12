@@ -13,6 +13,30 @@
     function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
     gtag('config', 'G-R5YYL4FKN4');
+
+    // Global Error Handler for Kindle Debugging
+    window.onerror = function (msg, url, line, col, error) {
+      // Ignore insignificant errors
+      if (msg.includes('Script error.') && !url) return true;
+
+      const errorMsg = `Global Error: ${msg}\nAt: ${url}:${line}:${col}`;
+      console.error(errorMsg);
+
+      // Delay to ensure DOM is ready or alert immediately if desperate
+      setTimeout(() => {
+        const msgDiv = document.getElementById('message');
+        if (msgDiv) {
+          msgDiv.style.display = 'block';
+          msgDiv.style.color = 'red';
+          msgDiv.style.whiteSpace = 'pre-wrap';
+          msgDiv.textContent += errorMsg + '\n\n';
+        } else {
+          // Fallback for white-screen of death
+          alert(errorMsg);
+        }
+      }, 500);
+      return false;
+    };
   </script>
 
   <link rel="manifest" href="manifest.json">
