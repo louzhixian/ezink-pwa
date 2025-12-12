@@ -1,11 +1,10 @@
 {
-  "name": "ez-ink-pwa",
+  "name": "ezink-pwa",
   "version": "1.0.0",
   "description": "E-ink optimized reading PWA for EZ Ink browser extension",
   "main": "index.html",
   "scripts": {
     "dev": "python3 -m http.server 8000",
-    "deploy": "wrangler pages deploy . --project-name ezink-pwa",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -14,6 +13,6 @@
     "pwa",
     "kindle"
   ],
-  "author": "",
+  "author": "zhixian",
   "license": "MIT"
 }
