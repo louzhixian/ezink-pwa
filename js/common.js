@@ -100,6 +100,9 @@ startConnectivityMonitor();
 // Handles clean URLs (Cloudflare) vs .html extensions (Localhost)
 window.navigateTo = function (page, params = '') {
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const path = isLocal ? `${page}.html` : `./${page}`;
+  let path = isLocal ? `${page}.html` : `./${page}`;
+  if (page == 'index') {
+    path = '/';
+  }
   window.location.href = params ? `${path}${params}` : path;
 };
