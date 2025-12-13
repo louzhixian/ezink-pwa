@@ -11,13 +11,20 @@ async function checkAuthStatus() {
   }
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+
     if (session) {
       // Determines correct path based on environment
       window.navigateTo('list');
     }
   } catch (err) {
     console.error('Error checking auth status:', err);
+    // If refresh token is invalid, clear it to prevent loop
+    if (err.message && (err.message.includes('Refresh Token') || err.message.includes('refresh_token'))) {
+      console.log('Clearing invalid refresh token');
+      localStorage.removeItem('sb-auth-token');
+    }
   }
 }
 
