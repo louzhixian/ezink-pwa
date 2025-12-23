@@ -7,11 +7,15 @@ const ARTICLE_CACHE = `ez-ink-articles-${CACHE_VERSION}`;
 const FONT_CACHE = `ez-ink-fonts-${CACHE_VERSION}`;
 
 // Static assets to precache
+// Static assets to precache (includes both clean URLs and .html for compatibility)
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/index',
   '/list.html',
+  '/list',
   '/reader.html',
+  '/reader',
   '/css/common.css',
   '/css/login.css',
   '/css/list.css',
@@ -32,21 +36,40 @@ const STATIC_ASSETS = [
   '/icons/favicon.svg'
 ];
 
-// Install event: Precache static assets
+// Install event: Precache static assets with fault tolerance
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then((cache) => {
-        console.log('[SW] Precaching static assets');
-        return cache.addAll(STATIC_ASSETS);
+      .then(async (cache) => {
+        console.log('[SW] Precaching static assets individually');
+
+        let successCount = 0;
+        let failCount = 0;
+
+        // Cache each asset individually so one failure doesn't break everything
+        await Promise.all(
+          STATIC_ASSETS.map(async (url) => {
+            try {
+              const response = await fetch(url);
+              if (response.ok) {
+                await cache.put(url, response);
+                successCount++;
+              } else {
+                console.warn(`[SW] Failed to fetch asset: ${url} (${response.status})`);
+                failCount++;
+              }
+            } catch (error) {
+              console.warn(`[SW] Failed to cache asset: ${url}`, error);
+              failCount++;
+            }
+          })
+        );
+
+        console.log(`[SW] Precache complete. Success: ${successCount}, Failed: ${failCount}`);
       })
       .then(() => {
-        console.log('[SW] Static assets cached successfully');
         return self.skipWaiting();
-      })
-      .catch((error) => {
-        console.error('[SW] Precache failed:', error);
       })
   );
 });
@@ -61,9 +84,9 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter((name) => {
               return name.startsWith('ez-ink-') &&
-                     name !== STATIC_CACHE &&
-                     name !== ARTICLE_CACHE &&
-                     name !== FONT_CACHE;
+                name !== STATIC_CACHE &&
+                name !== ARTICLE_CACHE &&
+                name !== FONT_CACHE;
             })
             .map((name) => {
               console.log('[SW] Deleting old cache:', name);
@@ -110,8 +133,8 @@ self.addEventListener('fetch', (event) => {
   }
   // Strategy 3: CDN fonts - Stale While Revalidate
   else if (url.hostname.includes('googleapis.com') ||
-           url.hostname.includes('gstatic.com') ||
-           url.hostname.includes('jsdelivr.net')) {
+    url.hostname.includes('gstatic.com') ||
+    url.hostname.includes('jsdelivr.net')) {
     event.respondWith(staleWhileRevalidate(request, FONT_CACHE));
   }
   // Default: Network only (for other requests)
@@ -209,15 +232,44 @@ async function staleWhileRevalidate(request, cacheName) {
 }
 
 // Handle navigation with cached shell fallback (ignores search params)
+// Handle navigation with cached shell fallback (ignores search params)
 async function handleNavigationRequest(url) {
   try {
+    // Always try network first for navigation
     return await fetch(url.href);
   } catch (error) {
     console.warn('[SW] Navigation network failed, serving shell from cache:', url.href);
     const cache = await caches.open(STATIC_CACHE);
-    const fallbackPath = url.pathname.includes('reader') ? '/reader.html' : '/list.html';
-    const cached = await cache.match(fallbackPath);
-    return cached || Response.error();
+
+    // Determine the page type based on URL
+    let page = 'index';
+    if (url.pathname.includes('reader')) page = 'reader';
+    else if (url.pathname.includes('list')) page = 'list';
+    else if (url.pathname === '/' || url.pathname.includes('index')) page = 'index';
+
+    // Try multiple possible cache keys for this page
+    const possibleKeys = [
+      `/${page}.html`, // Localhost style
+      `/${page}`,      // Clean URL style
+      url.pathname     // Exact path match
+    ];
+
+    if (page === 'index') {
+      possibleKeys.push('/');
+      possibleKeys.push('/index.html');
+      possibleKeys.push('/index');
+    }
+
+    for (const key of possibleKeys) {
+      const cached = await cache.match(key);
+      if (cached) {
+        console.log(`[SW] Served cached shell for navigation: ${key}`);
+        return cached;
+      }
+    }
+
+    // Last resort fallback
+    return (await cache.match('/list.html')) || (await cache.match('/list')) || Response.error();
   }
 }
 
