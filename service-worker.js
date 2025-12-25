@@ -1,7 +1,7 @@
 // EZ Ink PWA Service Worker
 // Version: 1.0.0
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `ez-ink-static-${CACHE_VERSION}`;
 const ARTICLE_CACHE = `ez-ink-articles-${CACHE_VERSION}`;
 const FONT_CACHE = `ez-ink-fonts-${CACHE_VERSION}`;
@@ -53,7 +53,21 @@ self.addEventListener('install', (event) => {
             try {
               const response = await fetch(url);
               if (response.ok) {
-                await cache.put(url, response);
+                // IMPORTANT: If response was redirected (e.g. /reader -> /reader.html),
+                // we must create a clean copy. Using a 'redirected' response to satisfy
+                // a navigation request can fail in some browsers/environments.
+                if (response.redirected) {
+                  console.log(`[SW] Cleaning redirected response for: ${url}`);
+                  const body = await response.blob();
+                  const cleanResponse = new Response(body, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: response.headers
+                  });
+                  await cache.put(url, cleanResponse);
+                } else {
+                  await cache.put(url, response);
+                }
                 successCount++;
               } else {
                 console.warn(`[SW] Failed to fetch asset: ${url} (${response.status})`);
