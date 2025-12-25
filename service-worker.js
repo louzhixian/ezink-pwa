@@ -1,7 +1,7 @@
 // EZ Ink PWA Service Worker
 // Version: 1.0.0
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `ez-ink-static-${CACHE_VERSION}`;
 const ARTICLE_CACHE = `ez-ink-articles-${CACHE_VERSION}`;
 const FONT_CACHE = `ez-ink-fonts-${CACHE_VERSION}`;

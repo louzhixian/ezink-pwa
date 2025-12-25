@@ -106,3 +106,13 @@ window.navigateTo = function (page, params = '') {
   }
   window.location.href = params ? `${path}${params}` : path;
 };
+
+// Fail-safe analytics stub
+// Ensures app doesn't crash if analytics.js fails to load (e.g. offline/blocked)
+if (typeof window.trackEvent === 'undefined') {
+  window.trackEvent = function (eventName, params) {
+    if (window.location.hostname === 'localhost') {
+      console.log('[Analytics Stub]', eventName, params);
+    }
+  };
+}
